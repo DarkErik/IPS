@@ -32,8 +32,8 @@ def preprocess_UTK_images(utk_folder, resulting_folder, dataset_name) -> Any:
     Util.printProgressBar(max, max)
     data = data.reshape((-1, WIDTH, HEIGHT, 3))
 
-    np.save(f"{resulting_folder}\\{dataset_name}_data.npy", data)
-    np.save(f"{resulting_folder}\\{dataset_name}_labels.npy", labels)
+    np.save(os.path.join(resulting_folder, dataset_name + "_data.npy"), data)
+    np.save(os.path.join(resulting_folder, dataset_name + "_labels.npy"), labels)
 
 
 def load_dataset_from_preprocessed(preprocessed_folder, dataset_name):
@@ -43,8 +43,8 @@ def load_dataset_from_preprocessed(preprocessed_folder, dataset_name):
     :param dataset_name: Name of the Dataset (e.x utk)
     :return: the according Tensorflow dataset
     """
-    data = np.load(f"{preprocessed_folder}\\{dataset_name}_data.npy")
-    labels = np.load(f"{preprocessed_folder}\\{dataset_name}_labels.npy")
+    data = np.load(os.path.join(preprocessed_folder, dataset_name + "_data.npy"))
+    labels = np.load(os.path.join(preprocessed_folder, dataset_name + "_labels.npy"))
 
     return create_TF_dataset_from_npArr(data, labels)
 
@@ -80,7 +80,7 @@ def _preprocess_image(image_dir, image_name) -> Any:
     :param image_name: name of the image file
     :return: a pixel array (flattend, WIDTH * HEIGHT) and  the corresponding label (int)
     """
-    img = Image.open(f"{image_dir}\\{image_name}")
+    img = Image.open(os.path.join(image_dir, image_name))
     pxls = np.array(img, float)
 
     # for ix in range(0, WIDTH):

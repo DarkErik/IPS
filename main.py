@@ -1,13 +1,15 @@
+import os
+
 import AgeNNModel
 import DataLoader
 import TrainNeuralNetwork
 
-PREPROCESSED_DATASET_FOLDER = "data\\preprocessed"
-UTK_FACE_FOLDER = "data\\UTKFace"
+PREPROCESSED_DATASET_FOLDER = os.path.join("data", "preprocessed")
+UTK_FACE_FOLDER = os.path.join("data", "UTKFace")
 UTK_DATASET_NAME = "utk"
 SAVE_PATH = "trainedNetworks"
 
-PREPROCESS_DATA = False
+PREPROCESS_DATA = True
 
 
 def main():

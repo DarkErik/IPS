@@ -1,3 +1,5 @@
+import os
+
 import tensorflow as tf
 from typing import Any
 
@@ -35,7 +37,7 @@ def train_network(model, epochs, trainings_data, validation_data, network_save_p
 
 
 def get_checkpoint_callback():
-    checkpoint_path = f"{NETWORK_SAVE_PATH_BASE_FOLDER}\\{_network_save_path_addition}\\epoche-{_current_training_epoch}.ckpt"
+    checkpoint_path = os.path.join(NETWORK_SAVE_PATH_BASE_FOLDER, _network_save_path_addition, f"epoche-{_current_training_epoch}.ckpt")
     cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                      save_weights_only=True,
                                                      verbose=1)
