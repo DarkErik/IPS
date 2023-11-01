@@ -4,7 +4,7 @@ import tensorflow as tf
 from typing import Any
 
 
-NETWORK_SAVE_PATH_BASE_FOLDER = "\\trainedNetworks"
+NETWORK_SAVE_PATH_BASE_FOLDER = "trainedNetworks"
 _network_save_path_addition = ""
 _current_training_epoch: int = 0
 
@@ -23,21 +23,25 @@ def train_network(model, epochs, trainings_data, validation_data, network_save_p
 
     model.compile(optimizer='adam',
                   loss=tf.keras.losses.MeanSquaredError(),
-                  metrics=['accuracy'])
+                  metrics=['accuracy'],
+                  )
 
     model.summary()
 
     history = model.fit(
         trainings_data,
         validation_data=validation_data,
-        epochs=epochs
+        epochs=epochs,
+        callbacks = [get_checkpoint_callback()]
     )
 
-    return history
+    return history, model
 
 
 def get_checkpoint_callback():
+    global _current_training_epoch
     checkpoint_path = os.path.join(NETWORK_SAVE_PATH_BASE_FOLDER, _network_save_path_addition, f"epoche-{_current_training_epoch}.ckpt")
+    _current_training_epoch = 1
     cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                      save_weights_only=True,
                                                      verbose=1)

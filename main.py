@@ -2,14 +2,15 @@ import os
 
 import AgeNNModel
 import DataLoader
+import Plotter
 import TrainNeuralNetwork
 
 PREPROCESSED_DATASET_FOLDER = os.path.join("data", "preprocessed")
 UTK_FACE_FOLDER = os.path.join("data", "UTKFace")
 UTK_DATASET_NAME = "utk"
-SAVE_PATH = "trainedNetworks"
+AGE_EXTENSION = "age"
 
-PREPROCESS_DATA = True
+PREPROCESS_DATA = False
 
 
 def main():
@@ -23,12 +24,14 @@ def main():
     test_ds = test_ds.batch(16)
     val_ds = val_ds.batch(16)
 
-    TrainNeuralNetwork.train_network(AgeNNModel.getModel(),
+    history, model = TrainNeuralNetwork.train_network(AgeNNModel.getModel(),
                                      10,
                                      train_ds,
                                      val_ds,
-                                     SAVE_PATH
+                                     AGE_EXTENSION
                                      )
+
+    Plotter.log_prediction_of_age(val_ds, model);
 
 if __name__ == '__main__':
     main()
