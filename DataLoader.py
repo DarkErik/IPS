@@ -3,8 +3,11 @@ from PIL import Image
 import numpy as np
 import tensorflow as tf
 import os
+import AgeNNModel
+import GenderNNModel
 
 import Util
+import main
 
 WIDTH = 200
 HEIGHT = 200
@@ -105,3 +108,26 @@ def _preprocess_image(image_dir, image_name) -> Any:
     label_gender = int(split_path[1])
     label_race = int(split_path[2])
     return pxls, label_age, label_gender, label_race
+
+
+def load_current_model():
+    if (main.CURRENT_NETWORK == main.AGE_EXTENSION):
+        return load_age_model()
+    elif main.CURRENT_NETWORK == main.GENDER_EXTENSION:
+        return load_gender_model()
+    else:
+        print("Unkown model in main.CURRENT_NETWORK")
+
+def load_age_model():
+    model = AgeNNModel.getModel()
+    model.load_weights(os.path.join("trainedNetworks", "age", "epoche-0.ckpt"))
+
+    return model
+
+def load_gender_model():
+    model = GenderNNModel.getModel()
+    model.load_weights(os.path.join("trainedNetworks", "gender", "epoche-0.ckpt"))
+
+    return model
+
+

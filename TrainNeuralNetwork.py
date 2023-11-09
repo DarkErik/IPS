@@ -3,6 +3,10 @@ import os
 import tensorflow as tf
 from typing import Any
 
+import AgeNNModel
+import GenderNNModel
+import main
+
 
 NETWORK_SAVE_PATH_BASE_FOLDER = "trainedNetworks"
 _network_save_path_addition = ""
@@ -47,3 +51,18 @@ def get_checkpoint_callback():
                                                      verbose=1)
     return cp_callback
 
+
+#cp_callback = tf.keras.callbacks.ModelCheckpoint(
+    # filepath=checkpoint_path,
+    # verbose=1,
+    # save_weights_only=True,
+    # save_freq=5*n_batches)
+
+
+def get_model_current_model():
+    if main.CURRENT_NETWORK == main.AGE_EXTENSION:
+        return AgeNNModel.getModel()
+    elif main.CURRENT_NETWORK == main.GENDER_EXTENSION:
+        return GenderNNModel.getModel()
+    else:
+        print("UNKOWN MODEL IN main.CURRENT_NETWORK")
