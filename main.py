@@ -13,8 +13,11 @@ GENDER_EXTENSION = "gender"
 RACE_EXTENSION = "race"
 
 PREPROCESS_DATA = False
-TRAIN_OR_LOAD = "load" #train or load
-CURRENT_NETWORK = GENDER_EXTENSION
+TRAIN_OR_LOAD = "train" #train or load
+CURRENT_NETWORK = AGE_EXTENSION
+
+CKPT_TO_LOAD = "oldest" #oldest or number
+EPOCHS = 10
 
 def main():
     if PREPROCESS_DATA:
@@ -51,13 +54,14 @@ def train_model():
     train_ds, val_ds, test_ds = get_batched_datasets()
 
     history, model = TrainNeuralNetwork.train_network(TrainNeuralNetwork.get_model_current_model(),
-                                                      10,
+                                                      EPOCHS,
                                                       train_ds,
                                                       val_ds,
                                                       CURRENT_NETWORK
                                                       )
 
     Plotter.get_evaluation_for_currnet_model(val_ds, model)
+    Plotter.plot_history(history)
 
 if __name__ == '__main__':
     main()

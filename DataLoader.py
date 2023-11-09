@@ -25,7 +25,7 @@ def preprocess_UTK_images(utk_folder, resulting_folder, dataset_name) -> Any:
     all_images = [f for f in os.listdir(utk_folder) if os.path.isfile(os.path.join(utk_folder, f))]
     max = len(all_images) // 10
 
-    data = np.array([0]*((max * WIDTH * HEIGHT * 3)))
+    data = np.array([0] * ((max * WIDTH * HEIGHT * 3)))
     data = data.reshape((-1, WIDTH, HEIGHT, 3))
 
     labels_age = np.array([])
@@ -35,7 +35,7 @@ def preprocess_UTK_images(utk_folder, resulting_folder, dataset_name) -> Any:
     for i in range(0, max):
         pxls, age, gender, race = _preprocess_image(utk_folder, all_images[i])
 
-        data[i] = pxls #np.insert(data, i, pxls, 0)
+        data[i] = pxls  # np.insert(data, i, pxls, 0)
         labels_age = np.append(labels_age, age)
         labels_gender = np.append(labels_gender, gender)
         labels_race = np.append(labels_race, race)
@@ -43,14 +43,13 @@ def preprocess_UTK_images(utk_folder, resulting_folder, dataset_name) -> Any:
 
     Util.printProgressBar(max, max)
 
-
     np.save(os.path.join(resulting_folder, dataset_name + "_data.npy"), data)
     np.save(os.path.join(resulting_folder, dataset_name + "_age_labels.npy"), labels_age)
     np.save(os.path.join(resulting_folder, dataset_name + "_gender_labels.npy"), labels_gender)
     np.save(os.path.join(resulting_folder, dataset_name + "_race_labels.npy"), labels_race)
 
 
-def load_dataset_from_preprocessed(preprocessed_folder, dataset_name, label_type = "age"):
+def load_dataset_from_preprocessed(preprocessed_folder, dataset_name, label_type="age"):
     """
     Loads a Dataset from the disc.
     :param label_type: Type of the labels; possible: "age", "gender", "race"
@@ -63,6 +62,7 @@ def load_dataset_from_preprocessed(preprocessed_folder, dataset_name, label_type
 
     return create_TF_dataset_from_npArr(data, labels)
 
+
 def create_TF_dataset_from_npArr(data, labels):
     """
     Creates a dataset from the corresponding data and labels array
@@ -72,12 +72,13 @@ def create_TF_dataset_from_npArr(data, labels):
     """
     return tf.data.Dataset.from_tensor_slices((data, labels)), len(labels)
 
+
 def split_dataset_into_train_val_test(ds, ds_size, train, test, val):
     train_size = int(train * ds_size)
     test_size = int(test * ds_size)
 
     for _ in range(20):
-        ds = ds.shuffle(int(ds_size), reshuffle_each_iteration = False)
+        ds = ds.shuffle(int(ds_size), reshuffle_each_iteration=False)
     train_dataset = ds.take(train_size)
     test_dataset = ds.skip(train_size)
     val_dataset = test_dataset.skip(test_size)
@@ -111,23 +112,32 @@ def _preprocess_image(image_dir, image_name) -> Any:
 
 
 def load_current_model():
-    if (main.CURRENT_NETWORK == main.AGE_EXTENSION):
-        return load_age_model()
+    if main.CURRENT_NETWORK == main.AGE_EXTENSION:
+        model = get_age_model()
     elif main.CURRENT_NETWORK == main.GENDER_EXTENSION:
-        return load_gender_model()
+        model = get_gender_model()
     else:
+        model = None
         print("Unkown model in main.CURRENT_NETWORK")
 
-def load_age_model():
+    load_weights_into_model(model)
+    return model
+
+def load_weights_into_model(model):
+    if main.CKPT_TO_LOAD == "oldest":
+        checkpoint_dir = os.path.join("trainedNetworks", main.CURRENT_NETWORK)
+        all_files = [f for f in os.listdir(checkpoint_dir) if (os.path.isfile(os.path.join(checkpoint_dir, f)))]
+        last_file = all_files[len(all_files) - 1]
+        main.CKPT_TO_LOAD = int(last_file[7:11])
+
+    model.load_weights(os.path.join("trainedNetworks", main.CURRENT_NETWORK, f"epoche-{main.CKPT_TO_LOAD:04d}.ckpt"))
+
+
+def get_age_model():
     model = AgeNNModel.getModel()
-    model.load_weights(os.path.join("trainedNetworks", "age", "epoche-0.ckpt"))
-
     return model
 
-def load_gender_model():
+
+def get_gender_model():
     model = GenderNNModel.getModel()
-    model.load_weights(os.path.join("trainedNetworks", "gender", "epoche-0.ckpt"))
-
     return model
-
-
