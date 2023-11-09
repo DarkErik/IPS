@@ -9,6 +9,8 @@ PREPROCESSED_DATASET_FOLDER = os.path.join("data", "preprocessed")
 UTK_FACE_FOLDER = os.path.join("data", "UTKFace")
 UTK_DATASET_NAME = "utk"
 AGE_EXTENSION = "age"
+GENDER_EXTENSION = "gender"
+RACE_EXTENSION = "race"
 
 PREPROCESS_DATA = False
 
@@ -25,7 +27,7 @@ def main():
     val_ds = val_ds.batch(16)
 
     history, model = TrainNeuralNetwork.train_network(AgeNNModel.getModel(),
-                                     10,
+                                     30,
                                      train_ds,
                                      val_ds,
                                      AGE_EXTENSION
