@@ -7,13 +7,15 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import numpy as np
 import main
 
-def get_evaluation_for_currnet_model(predict_data, model):
-    if main.CURRENT_NETWORK == main.AGE_EXTENSION:
+
+def get_evaluation_for_currnet_model(predict_data, model, networkType):
+    if networkType == main.AGE_EXTENSION:
         log_prediction_of_age(predict_data, model)
-    elif main.CURRENT_NETWORK == main.GENDER_EXTENSION:
+    elif networkType == main.GENDER_EXTENSION:
         log_prediction_of_gender(predict_data, model)
     else:
         print("Unkown model in main.CURRENT_NETWORK")
+
 
 def split_dataset_in_data_and_labels(dataset):
     texts = np.array([])
@@ -24,9 +26,8 @@ def split_dataset_in_data_and_labels(dataset):
 
     texts = texts.reshape((-1, 200, 200, 3))
 
-
-
     return texts, text_labels
+
 
 def log_prediction_of_gender(predict_data, model):
     print("Running Gender Evaluation")
@@ -42,6 +43,7 @@ def log_prediction_of_gender(predict_data, model):
 
     print(f"Wrong Predictions: {avg_err} ({avg_err / len(predictions)}%)")
 
+
 def log_prediction_of_age(predict_data, model):
     print("Running Age Evaluation")
 
@@ -54,7 +56,9 @@ def log_prediction_of_age(predict_data, model):
         avg_err += abs(labels[i] - predictions[i][0])
 
     print(f"Avg years off: {avg_err / len(predictions)}")
-def plot_confusion_matrix_raw(text_labels, predictions, output_neurons, normalize = False):
+
+
+def plot_confusion_matrix_raw(text_labels, predictions, output_neurons, normalize=False):
     if normalize:
         normalize = 'true'
     else:
@@ -73,7 +77,7 @@ def plot_confusion_matrix_raw(text_labels, predictions, output_neurons, normaliz
     if normalize:
         fmt = '.2g'
 
-    sns.heatmap(cm_df, annot=True, fmt = fmt)
+    sns.heatmap(cm_df, annot=True, fmt=fmt)
     plt.title('Confusion Matrix')
     plt.ylabel('Actual Values')
     plt.xlabel('Predicted Values')

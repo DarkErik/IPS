@@ -14,7 +14,12 @@ def getModel():
         tf.keras.layers.MaxPooling2D(),
         tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(1)
+        tf.keras.layers.Dense(6, activation="softmax")
     ])
+
+    model.compile(optimizer='adam',
+                  loss=tf.keras.losses.CategoricalCrossentropy(),
+                  metrics=['accuracy'],
+                  )
 
     return model

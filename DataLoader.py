@@ -6,6 +6,8 @@ import os
 import AgeNNModel
 import GenderNNModel
 
+import constances
+
 import Util
 import main
 
@@ -23,7 +25,7 @@ def preprocess_UTK_images(utk_folder, resulting_folder, dataset_name) -> Any:
     """
 
     all_images = [f for f in os.listdir(utk_folder) if os.path.isfile(os.path.join(utk_folder, f))]
-    max = len(all_images) // 10
+    max = len(all_images)
 
     data = np.array([0] * ((max * WIDTH * HEIGHT * 3)))
     data = data.reshape((-1, WIDTH, HEIGHT, 3))
@@ -34,6 +36,9 @@ def preprocess_UTK_images(utk_folder, resulting_folder, dataset_name) -> Any:
 
     for i in range(0, max):
         pxls, age, gender, race = _preprocess_image(utk_folder, all_images[i])
+
+        if pxls is None:
+            continue
 
         data[i] = pxls  # np.insert(data, i, pxls, 0)
         labels_age = np.append(labels_age, age)
@@ -59,6 +64,18 @@ def load_dataset_from_preprocessed(preprocessed_folder, dataset_name, label_type
     """
     data = np.load(os.path.join(preprocessed_folder, dataset_name + "_data.npy"))
     labels = np.load(os.path.join(preprocessed_folder, dataset_name + "_" + label_type + "_labels.npy"))
+
+    if label_type == "age":
+
+        newlabels = np.array([0] * len(labels) * len(constances.AGE_RESULTING_LABELS[0]))
+        newlabels = newlabels.reshape((-1, 6))
+
+        for i in range(len(labels)):
+            for j in range(len(constances.AGE_CATEGORIES)):
+                if labels[i] < constances.AGE_CATEGORIES[j]:
+                    newlabels[i] = constances.AGE_RESULTING_LABELS[j]
+                    break
+        labels = newlabels
 
     return create_TF_dataset_from_npArr(data, labels)
 
@@ -87,7 +104,7 @@ def split_dataset_into_train_val_test(ds, ds_size, train, test, val):
     return train_dataset, test_dataset, val_dataset
 
 
-def _preprocess_image(image_dir, image_name) -> Any:
+def _preprocess_image(image_dir, image_name, use_file_name_info = True) -> Any:
     """
     Preprocesses an images.
     Steps:
@@ -104,40 +121,60 @@ def _preprocess_image(image_dir, image_name) -> Any:
     #     for iy in range(0, HEIGHT):
     #         pxls[ix, iy] /= 255.0
 
-    split_path = image_name.split("_")
-    label_age = int(split_path[0])
-    label_gender = int(split_path[1])
-    label_race = int(split_path[2])
-    return pxls, label_age, label_gender, label_race
+    if use_file_name_info:
+        try:
+            split_path = image_name.split("_")
+            label_age = int(split_path[0])
+            label_gender = int(split_path[1])
+            label_race = int(split_path[2])
+            return pxls, label_age, label_gender, label_race
+        except ValueError:
+            print(f"Error in file {image_name}")
+            return None, None, None, None
+    else:
+        return pxls
 
+def get_model_current_model(network_type):
+    if network_type == main.AGE_EXTENSION:
+        return AgeNNModel.getModel()
+    elif network_type == main.GENDER_EXTENSION:
+        return GenderNNModel.getModel()
+    else:
+        print("UNKOWN MODEL IN main.CURRENT_NETWORK")
 
-def load_current_model():
-    if main.CURRENT_NETWORK == main.AGE_EXTENSION:
+def load_current_model(networkType):
+
+    if networkType == main.AGE_EXTENSION:
         model = get_age_model()
-    elif main.CURRENT_NETWORK == main.GENDER_EXTENSION:
+    elif networkType == main.GENDER_EXTENSION:
         model = get_gender_model()
     else:
         model = None
         print("Unkown model in main.CURRENT_NETWORK")
 
-    load_weights_into_model(model)
+    load_weights_into_model(model, networkType)
     return model
 
-def load_weights_into_model(model):
+def load_weights_into_model(model, networkType):
+    load_num = main.CKPT_TO_LOAD
     if main.CKPT_TO_LOAD == "oldest":
-        checkpoint_dir = os.path.join("trainedNetworks", main.CURRENT_NETWORK)
+        checkpoint_dir = os.path.join("trainedNetworks", networkType)
         all_files = [f for f in os.listdir(checkpoint_dir) if (os.path.isfile(os.path.join(checkpoint_dir, f)))]
         last_file = all_files[len(all_files) - 1]
-        main.CKPT_TO_LOAD = int(last_file[7:11])
+        load_num = int(last_file[7:11])
 
-    model.load_weights(os.path.join("trainedNetworks", main.CURRENT_NETWORK, f"epoche-{main.CKPT_TO_LOAD:04d}.ckpt"))
+    model.load_weights(os.path.join("trainedNetworks", networkType, f"epoche-{load_num:04d}.ckpt"))
 
 
 def get_age_model():
     model = AgeNNModel.getModel()
+
+
     return model
 
 
 def get_gender_model():
     model = GenderNNModel.getModel()
+
+
     return model

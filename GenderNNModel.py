@@ -17,4 +17,9 @@ def getModel():
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
 
+    model.compile(optimizer='adam',
+                  loss=tf.keras.losses.BinaryCrossentropy(),
+                  metrics=['accuracy'],
+                  )
+
     return model

@@ -25,12 +25,9 @@ def train_network(model, epochs, trainings_data, validation_data, network_save_p
     _current_training_epoch = 0
     _network_save_path_addition = network_save_path_addition
 
-    model.compile(optimizer='adam',
-                  loss=tf.keras.losses.MeanSquaredError(),
-                  metrics=['accuracy'],
-                  )
-
     model.summary()
+
+
 
     history = model.fit(
         trainings_data,
@@ -60,10 +57,3 @@ def get_checkpoint_callback():
     return cp_callback
 
 
-def get_model_current_model():
-    if main.CURRENT_NETWORK == main.AGE_EXTENSION:
-        return AgeNNModel.getModel()
-    elif main.CURRENT_NETWORK == main.GENDER_EXTENSION:
-        return GenderNNModel.getModel()
-    else:
-        print("UNKOWN MODEL IN main.CURRENT_NETWORK")
