@@ -13,6 +13,8 @@ def get_evaluation_for_currnet_model(predict_data, model, networkType):
         log_prediction_of_age(predict_data, model)
     elif networkType == main.GENDER_EXTENSION:
         log_prediction_of_gender(predict_data, model)
+    elif networkType == main.MOOD_EXTENSION:
+        log_prediction_of_mood(predict_data, model)
     else:
         print("Unkown model in main.CURRENT_NETWORK")
 
@@ -29,6 +31,21 @@ def split_dataset_in_data_and_labels(dataset):
     return texts, text_labels
 
 
+def log_prediction_of_mood(predict_data, model):
+    print("Running Mood Evaluation")
+
+    input, labels = split_dataset_in_data_and_labels(predict_data)
+    predictions = model.predict(x=input, batch_size=1)
+
+    false_prediction = 0
+    for i in range(len(predictions)):
+        print(f"{i}:\t{labels[i]}\t{predictions[i][0]}\t {'Correct' if labels[i] == predictions[i][0] else 'Wrong'}")
+        if labels[i] != predictions[i][0]:
+            false_prediction += 1
+
+    print(f"Wrong Predictions: {false_prediction} ({false_prediction / len(predictions)}%)")
+
+
 def log_prediction_of_gender(predict_data, model):
     print("Running Gender Evaluation")
 
@@ -36,7 +53,7 @@ def log_prediction_of_gender(predict_data, model):
 
     predictions = model.predict(x=input, batch_size=1)
     predictions = [[int(x[0] + 0.5)] for x in predictions]
-    avg_err = 0;
+    avg_err = 0
     for i in range(len(predictions)):
         print(f"{i}:\t{labels[i]}\t{predictions[i][0]}\tOff: {abs(labels[i] - predictions[i][0])}")
         avg_err += abs(labels[i] - predictions[i][0])
@@ -50,7 +67,7 @@ def log_prediction_of_age(predict_data, model):
     input, labels = split_dataset_in_data_and_labels(predict_data)
 
     predictions = model.predict(x=input, batch_size=1)
-    avg_err = 0;
+    avg_err = 0
     for i in range(len(predictions)):
         print(f"{i}:\t{labels[i]}\t{predictions[i][0]}\tYears off: {abs(labels[i] - predictions[i][0])}")
         avg_err += abs(labels[i] - predictions[i][0])

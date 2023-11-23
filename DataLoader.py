@@ -1,10 +1,11 @@
 from typing import Any
-from PIL import Image
+from PIL import Image, ImageOps
 import numpy as np
 import tensorflow as tf
 import os
 import AgeNNModel
 import GenderNNModel
+import MoodNNModel
 
 import constances
 
@@ -80,6 +81,44 @@ def load_dataset_from_preprocessed(preprocessed_folder, dataset_name, label_type
     return create_TF_dataset_from_npArr(data, labels)
 
 
+def load_mood_face_dataset():
+    batch_size = 128 #TODO change to 16
+
+    datagen_train = tf.keras.preprocessing.image.ImageDataGenerator()
+    datagen_val = tf.keras.preprocessing.image.ImageDataGenerator()
+
+    train_set = datagen_train.flow_from_directory(os.path.join(main.MOOD_FACE_FOLDER, "train"),
+                                                  target_size=(MoodNNModel.MOOD_PIC_SIZE, MoodNNModel.MOOD_PIC_SIZE),
+                                                  color_mode="grayscale",
+                                                  batch_size=batch_size,
+                                                  class_mode='categorical',
+                                                  shuffle=True)
+
+    test_set = datagen_val.flow_from_directory(os.path.join(main.MOOD_FACE_FOLDER, "test"),
+                                               target_size=(MoodNNModel.MOOD_PIC_SIZE, MoodNNModel.MOOD_PIC_SIZE),
+                                               color_mode="grayscale",
+                                               batch_size=batch_size,
+                                               class_mode='categorical',
+                                               shuffle=False)
+
+    return train_set, test_set
+
+
+def get_batched_datasets(current_network):
+    if current_network == main.MOOD_EXTENSION:
+        train, val = load_mood_face_dataset()
+
+        return train, val, None
+
+    dataset, dataset_size = load_dataset_from_preprocessed(main.PREPROCESSED_DATASET_FOLDER, main.UTK_DATASET_NAME,
+                                                           current_network)
+    train_ds, test_ds, val_ds = split_dataset_into_train_val_test(dataset, dataset_size, 0.80, 0.1, 0.1)
+
+    train_ds = train_ds.batch(16)
+    test_ds = test_ds.batch(16)
+    val_ds = val_ds.batch(16)
+
+    return train_ds, val_ds, test_ds
 def create_TF_dataset_from_npArr(data, labels):
     """
     Creates a dataset from the corresponding data and labels array
@@ -87,6 +126,9 @@ def create_TF_dataset_from_npArr(data, labels):
     :param labels: npArray
     :return: the according Tensorflow Dataset, and the size of it
     """
+
+    # USE IMAGE DATA GEN IF NOT SUFFICIENT
+
     return tf.data.Dataset.from_tensor_slices((data, labels)), len(labels)
 
 
@@ -139,8 +181,19 @@ def get_model_current_model(network_type):
         return AgeNNModel.getModel()
     elif network_type == main.GENDER_EXTENSION:
         return GenderNNModel.getModel()
+    elif network_type == main.MOOD_EXTENSION:
+        return MoodNNModel.getModel()
     else:
         print("UNKOWN MODEL IN main.CURRENT_NETWORK")
+
+def load_data_for_mood(dir, image_name):
+    img = Image.open(os.path.join(dir, image_name))
+    img2 = ImageOps.grayscale(img)
+    img3 = img2.resize((MoodNNModel.MOOD_PIC_SIZE, MoodNNModel.MOOD_PIC_SIZE))
+    pxls = np.array(img3, float)
+
+    pxls = pxls.reshape((-1, MoodNNModel.MOOD_PIC_SIZE, MoodNNModel.MOOD_PIC_SIZE))
+    return pxls
 
 def load_current_model(networkType):
 
@@ -148,6 +201,8 @@ def load_current_model(networkType):
         model = get_age_model()
     elif networkType == main.GENDER_EXTENSION:
         model = get_gender_model()
+    elif networkType == main.MOOD_EXTENSION:
+        model = get_mood_model()
     else:
         model = None
         print("Unkown model in main.CURRENT_NETWORK")
@@ -168,13 +223,13 @@ def load_weights_into_model(model, networkType):
 
 def get_age_model():
     model = AgeNNModel.getModel()
-
-
     return model
 
 
 def get_gender_model():
     model = GenderNNModel.getModel()
+    return model
 
-
+def get_mood_model():
+    model = MoodNNModel.getModel()
     return model

@@ -8,22 +8,30 @@ import TrainNeuralNetwork
 import numpy as np
 import constances
 
+import website
+
 PREPROCESSED_DATASET_FOLDER = os.path.join("data", "preprocessed")
 UTK_FACE_FOLDER = os.path.join("data", "UTKFace")
+MOOD_FACE_FOLDER = os.path.join("data", "MoodFaces")
 UTK_DATASET_NAME = "utk"
 AGE_EXTENSION = "age"
 GENDER_EXTENSION = "gender"
 RACE_EXTENSION = "race"
+MOOD_EXTENSION = "mood"
 
 PREPROCESS_DATA = False
-TRAIN_OR_LOAD = "test"  # train or load or test
-CURRENT_NETWORK = GENDER_EXTENSION
+TRAIN_OR_LOAD = "train"  # train or load or test
+CURRENT_NETWORK = MOOD_EXTENSION
 
 CKPT_TO_LOAD = "oldest"  # oldest or number
-EPOCHS = 5
+EPOCHS = 65
 
 
 def main():
+    print("Start Flask")
+    website.run()
+    exit(1)
+
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     if PREPROCESS_DATA:
         DataLoader.preprocess_UTK_images(UTK_FACE_FOLDER, PREPROCESSED_DATASET_FOLDER, UTK_DATASET_NAME)
@@ -31,22 +39,13 @@ def main():
     if TRAIN_OR_LOAD == "train":
         train_model()
     elif TRAIN_OR_LOAD == "load":
-        train_ds, val_ds, test_ds = get_batched_datasets()
+        train_ds, val_ds, test_ds = DataLoader.get_batched_datasets()
         evaluate_model(val_ds)
     else:
         test_models()
 
 
-def get_batched_datasets():
-    dataset, dataset_size = DataLoader.load_dataset_from_preprocessed(PREPROCESSED_DATASET_FOLDER, UTK_DATASET_NAME,
-                                                                      CURRENT_NETWORK)
-    train_ds, test_ds, val_ds = DataLoader.split_dataset_into_train_val_test(dataset, dataset_size, 0.80, 0.1, 0.1)
 
-    train_ds = train_ds.batch(16)
-    test_ds = test_ds.batch(16)
-    val_ds = val_ds.batch(16)
-
-    return train_ds, val_ds, test_ds
 
 
 def evaluate_model(data_set):
@@ -56,7 +55,7 @@ def evaluate_model(data_set):
 
 
 def train_model():
-    train_ds, val_ds, test_ds = get_batched_datasets()
+    train_ds, val_ds, test_ds = DataLoader.get_batched_datasets(CURRENT_NETWORK)
 
     history, model = TrainNeuralNetwork.train_network(DataLoader.get_model_current_model(CURRENT_NETWORK),
                                                       EPOCHS,

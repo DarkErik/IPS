@@ -9,3 +9,5 @@ AGE_RESULTING_LABELS = [
     np.array([0, 0, 0, 0, 1, 0]),
     np.array([0, 0, 0, 0, 0, 1]),
 ]
+
+MOOD_CATEGORIES = ["Anger", "Disgust", "Fear", "Happiness", "Neutral", "Sad", "Surprise"]
