@@ -16,11 +16,11 @@ GENDER_EXTENSION = "gender"
 RACE_EXTENSION = "race"
 
 PREPROCESS_DATA = False
-TRAIN_OR_LOAD = "test"  # train or load or test
-CURRENT_NETWORK = GENDER_EXTENSION
+TRAIN_OR_LOAD = "train"  # train or load or test
+CURRENT_NETWORK = AGE_EXTENSION
 
 CKPT_TO_LOAD = "oldest"  # oldest or number
-EPOCHS = 5
+EPOCHS = 30
 
 
 def main():

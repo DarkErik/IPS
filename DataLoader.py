@@ -87,6 +87,9 @@ def create_TF_dataset_from_npArr(data, labels):
     :param labels: npArray
     :return: the according Tensorflow Dataset, and the size of it
     """
+
+    # USE IMAGE DATA GEN IF NOT SUFFICIENT
+
     return tf.data.Dataset.from_tensor_slices((data, labels)), len(labels)
 
 
