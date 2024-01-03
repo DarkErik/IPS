@@ -21,6 +21,7 @@ MOOD_EXTENSION = "mood"
 
 PREPROCESS_DATA = False
 TRAIN_OR_LOAD = "train"  # train or load or test
+
 CURRENT_NETWORK = MOOD_EXTENSION
 
 CKPT_TO_LOAD = "oldest"  # oldest or number
