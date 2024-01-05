@@ -3,27 +3,28 @@ import cv2
 import datetime, time
 import os, sys
 import numpy as np
-from threading import Thread
 
+import CostumerValueModel
 import DataLoader
 import constances
 import main
 
-global prediction_text
-prediction_text = ""
+global prediction_age, prediction_gender, prediction_mood, prediction_cv, current_company
+prediction_age = ""
+prediction_gender = ""
+prediction_mood = ""
+prediction_cv = ""
+current_company = "Electronics"
 
 global model_age, model_gender, model_mood
 model_age = None
 model_gender = None
 model_mood = None
 
-global capture, rec_frame, grey, switch, neg, face, rec, out
+global capture, switch, face, rec, out
 capture = 0
-grey = 0
-neg = 0
 face = 0
 switch = 1
-rec = 0
 
 # make shots directory to save pics
 try:
@@ -45,11 +46,7 @@ def run():
     app.run()
 
 
-def record(out):
-    global rec_frame
-    while (rec):
-        time.sleep(0.05)
-        out.write(rec_frame)
+
 
 
 def detect_face(frame):
@@ -78,18 +75,13 @@ def detect_face(frame):
 
 
 def gen_frames():  # generate frame by frame from camera
-    global out, capture, rec_frame
+    global out, capture
     while True:
         success, frame = camera.read()
         if success:
             if (face):
                 frame = detect_face(frame)
-            if (grey):
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            if (neg):
-                frame = cv2.bitwise_not(frame)
             if (capture):
-                capture = 0
                 now = datetime.datetime.now()
                 image_name = "shot_{}.png".format(str(now).replace(":", ''));
                 p = os.path.sep.join(['shots', image_name])
@@ -98,12 +90,7 @@ def gen_frames():  # generate frame by frame from camera
                 cv2.imwrite(p, resized_image)
 
                 evaluate_shot(shot_filename=image_name)
-
-            if (rec):
-                rec_frame = frame
-                frame = cv2.putText(cv2.flip(frame, 1), "Recording...", (0, 25), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                                    (0, 0, 255), 4)
-                frame = cv2.flip(frame, 1)
+                capture = 0
 
             try:
                 ret, buffer = cv2.imencode('.jpg', cv2.flip(frame, 1))
@@ -118,7 +105,7 @@ def gen_frames():  # generate frame by frame from camera
 
 
 def evaluate_shot(shot_filename):
-    global model_age, model_gender, model_mood, prediction_text
+    global model_age, model_gender, model_mood, prediction_age, prediction_mood, prediction_gender, prediction_cv
     if model_age is None:
         model_age = DataLoader.load_current_model(main.AGE_EXTENSION)
 
@@ -145,10 +132,12 @@ def evaluate_shot(shot_filename):
 
     if predictions[0] > 0:
         print(f"AGE: Between {constances.AGE_CATEGORIES[predictions[0] - 1]} and {constances.AGE_CATEGORIES[predictions[0]]}years old.")
-        prediction_text = f"Between {constances.AGE_CATEGORIES[predictions[0] - 1]} and {constances.AGE_CATEGORIES[predictions[0]]}years old."
+        prediction_age = f"Between {constances.AGE_CATEGORIES[predictions[0] - 1]} and {constances.AGE_CATEGORIES[predictions[0]]}years old."
     else:
         print(f"AGE: Less than {constances.AGE_CATEGORIES[predictions[0]]} years old")
-        prediction_text = f"Less than {constances.AGE_CATEGORIES[predictions[0]]} years old"
+        prediction_age = f"Less than {constances.AGE_CATEGORIES[predictions[0]]} years old"
+
+    predictions_age_for_cv = predictions[0]
 
     predictions = model_gender.predict(x=pxls, batch_size=1)
 
@@ -156,21 +145,25 @@ def evaluate_shot(shot_filename):
         gender = "female"
     else:
         gender = "male"
-    gender_prediction_text = f"Gender is {gender} ({predictions[0][0]:.2f})"
-    print(gender_prediction_text)
-    prediction_text = f"{prediction_text} {gender_prediction_text}."
+    prediction_gender = f"Gender is {gender} ({predictions[0][0]:.2f})"
+    print(prediction_gender)
+
 
     pxls = DataLoader.load_data_for_mood("shots", shot_filename)
 
     predictions = model_mood.predict(x=pxls, batch_size=1)
 
 
-    pred_txt = ""
+    prediction_mood = ""
     for i in range(len(constances.MOOD_CATEGORIES)):
-        pred_txt = f" {pred_txt} {constances.MOOD_CATEGORIES[i]} {predictions[0][i]:.2f}"
+        prediction_mood = f" {prediction_mood} {constances.MOOD_CATEGORIES[i]} {predictions[0][i]:.2f}"
 
-    print(f"MOOD PRED:{pred_txt}")
-    prediction_text = f"{prediction_text}{pred_txt}."
+    print(f"MOOD PRED:{prediction_mood}")
+
+    prediction_cv = f'{(CostumerValueModel.calculateValue(current_company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
+
+    print(f"CV: {prediction_cv}")
+
 
     print("--- END ---")
 
@@ -188,6 +181,15 @@ def predictions():
     return Response("hi <3")
 
 
+@app.route('/company', methods = ['POST', 'GET'])
+def customer_value():
+    global current_company
+    current_company = request.form.get('company')
+    print(f"Company changed to {current_company}")
+
+
+    return renderedTemplate()
+
 @app.route('/requests', methods=['POST', 'GET'])
 def tasks():
     global switch, camera
@@ -195,12 +197,9 @@ def tasks():
         if request.form.get('click') == 'Capture':
             global capture
             capture = 1
-        elif request.form.get('grey') == 'Grey':
-            global grey
-            grey = not grey
-        elif request.form.get('neg') == 'Negative':
-            global neg
-            neg = not neg
+
+            while(capture):
+                time.sleep(10)
         elif request.form.get('face') == 'Face Only':
             global face
             face = not face
@@ -216,20 +215,9 @@ def tasks():
             else:
                 camera = cv2.VideoCapture(0)
                 switch = 1
-        elif request.form.get('rec') == 'Start/Stop Recording':
-            global rec, out
-            rec = not rec
-            if (rec):
-                now = datetime.datetime.now()
-                fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                out = cv2.VideoWriter('vid_{}.avi'.format(str(now).replace(":", '')), fourcc, 20.0, (640, 480))
-                # Start new thread for recording the video
-                thread = Thread(target=record, args=[out, ])
-                thread.start()
-            elif (rec == False):
-                out.release()
-
-
     elif request.method == 'GET':
-        return render_template('index.html', predictions=prediction_text)
-    return render_template('index.html', predictions=prediction_text)
+        return renderedTemplate()
+    return renderedTemplate()
+
+def renderedTemplate():
+    return render_template('index.html', p_age=prediction_age, p_gender = prediction_gender, p_mood = prediction_mood, p_cv = prediction_cv, p_company = current_company)
