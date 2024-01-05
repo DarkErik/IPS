@@ -1,0 +1,40 @@
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8  offset-lg-2">
+
+
+            <h2 class="mt-5">CAMERA APP by Hemanth Nag</h2>
+			<form method="post" action="{{ url_for('tasks') }}">
+			<input type="submit" value="Stop/Start" name="stop" />
+			<input type="submit" value="Capture" name="click"/>
+			<input type="submit" value="Face Only" name="face" />
+			</form>
+            <img src="{{ url_for('video_feed') }}" height="80%">
+			<ul>
+				<li>{{p_age}}</li>
+				<li>{{p_gender}}</li>
+				<li>{{p_mood}}</li>
+				<li>Costumer value: {{p_cv}}%</li>
+			</ul>
+			<h4>Company: {{p_company}}</h4>
+			<form method="post" action="{{ url_for('customer_value') }}">
+				<select name="company" id="company">
+				  <option value="Electronics">Electronics</option>
+				  <option value="Drugstore">Drugstore</option>
+				  <option value="Vegan Food">Vegan Food</option>
+				  <option value="Kiosk">Kiosk</option>
+				</select>
+				<input type="submit" value="Apply" name="apply" />
+			</form>
+
+			<h3 style="font-family:courier;">Instructions:</h3>
+			<ol style="font-family:courier;">
+			<li>Stop/Start</li>
+			<li>Capture</li>
+			<li>Face Only</li>
+			<li>Change Company</li>
+        </div>
+    </div>
+</div>
+</body>
