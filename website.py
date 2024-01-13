@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response, request
+from flask import Flask, Response, request, render_template
 import cv2
 import datetime, time
 import os, sys
@@ -21,10 +21,12 @@ model_age = None
 model_gender = None
 model_mood = None
 
-global capture, switch, face, rec, out
+global capture, face, rec, out
 capture = 0
 face = 0
-switch = 1
+
+global camera_started
+camera_started = 1
 
 # make shots directory to save pics
 try:
@@ -44,9 +46,6 @@ camera = cv2.VideoCapture(0)
 
 def run():
     app.run()
-
-
-
 
 
 def detect_face(frame):
@@ -79,9 +78,9 @@ def gen_frames():  # generate frame by frame from camera
     while True:
         success, frame = camera.read()
         if success:
-            if (face):
+            if face:
                 frame = detect_face(frame)
-            if (capture):
+            if capture:
                 now = datetime.datetime.now()
                 image_name = "shot_{}.png".format(str(now).replace(":", ''));
                 p = os.path.sep.join(['shots', image_name])
@@ -129,9 +128,9 @@ def evaluate_shot(shot_filename):
 
     print(f"----- Pred: {shot_filename} -----")
 
-
     if predictions[0] > 0:
-        print(f"AGE: Between {constances.AGE_CATEGORIES[predictions[0] - 1]} and {constances.AGE_CATEGORIES[predictions[0]]}years old.")
+        print(
+            f"AGE: Between {constances.AGE_CATEGORIES[predictions[0] - 1]} and {constances.AGE_CATEGORIES[predictions[0]]}years old.")
         prediction_age = f"Between {constances.AGE_CATEGORIES[predictions[0] - 1]} and {constances.AGE_CATEGORIES[predictions[0]]}years old."
     else:
         print(f"AGE: Less than {constances.AGE_CATEGORIES[predictions[0]]} years old")
@@ -148,11 +147,9 @@ def evaluate_shot(shot_filename):
     prediction_gender = f"Gender is {gender} ({predictions[0][0]:.2f})"
     print(prediction_gender)
 
-
     pxls = DataLoader.load_data_for_mood("shots", shot_filename)
 
     predictions = model_mood.predict(x=pxls, batch_size=1)
-
 
     prediction_mood = ""
     for i in range(len(constances.MOOD_CATEGORIES)):
@@ -164,60 +161,73 @@ def evaluate_shot(shot_filename):
 
     print(f"CV: {prediction_cv}")
 
-
     print("--- END ---")
+
+
+@app.route('/instructions')
+def instructions():
+    return render_template('instructions.html')
+
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_flask_template()
 
 
 @app.route('/video_feed')
 def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+
 @app.route('/predictions')
 def predictions():
     return Response("hi <3")
 
 
-@app.route('/company', methods = ['POST', 'GET'])
+@app.route('/company', methods=['POST'])
 def customer_value():
     global current_company
     current_company = request.form.get('company')
     print(f"Company changed to {current_company}")
 
+    return render_flask_template()
 
-    return renderedTemplate()
 
-@app.route('/requests', methods=['POST', 'GET'])
+@app.route('/requests', methods=['POST'])
 def tasks():
-    global switch, camera
-    if request.method == 'POST':
-        if request.form.get('click') == 'Capture':
-            global capture
-            capture = 1
+    data = request.get_json()
+    action = data.get('action')
 
-            while(capture):
-                time.sleep(10)
-        elif request.form.get('face') == 'Face Only':
-            global face
-            face = not face
-            if (face):
-                time.sleep(4)
-        elif request.form.get('stop') == 'Stop/Start':
+    if action == 'capture':
+        global capture
+        capture = 1
 
-            if (switch == 1):
-                switch = 0
-                camera.release()
-                cv2.destroyAllWindows()
+        while capture:
+            time.sleep(10)
+    elif action == 'faceOnly':
+        global face
+        face = not face
 
-            else:
-                camera = cv2.VideoCapture(0)
-                switch = 1
-    elif request.method == 'GET':
-        return renderedTemplate()
-    return renderedTemplate()
+        if face:
+            time.sleep(4)
+    elif action == 'startStop':
+        global camera, camera_started
+        camera_started = not camera_started
 
-def renderedTemplate():
-    return render_template('index.html', p_age=prediction_age, p_gender = prediction_gender, p_mood = prediction_mood, p_cv = prediction_cv, p_company = current_company)
+        if camera_started:
+            camera.release()
+            cv2.destroyAllWindows()
+        else:
+            camera = cv2.VideoCapture(0)
+
+    return render_flask_template()
+
+
+def render_flask_template():
+    return render_template('index.html',
+                           p_age=prediction_age,
+                           p_gender=prediction_gender,
+                           p_mood=prediction_mood,
+                           p_cv=prediction_cv,
+                           p_company=current_company,
+                           camera_started=camera_started)

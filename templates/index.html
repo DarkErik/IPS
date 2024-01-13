@@ -1,40 +1,111 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+            integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+            integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+            crossorigin="anonymous"></script>
+    <title>ISP</title>
+</head>
 <body>
-<div class="container">
-    <div class="row">
-        <div class="col-lg-8  offset-lg-2">
-
-
-            <h2 class="mt-5">CAMERA APP by Hemanth Nag</h2>
-			<form method="post" action="{{ url_for('tasks') }}">
-			<input type="submit" value="Stop/Start" name="stop" />
-			<input type="submit" value="Capture" name="click"/>
-			<input type="submit" value="Face Only" name="face" />
-			</form>
-            <img src="{{ url_for('video_feed') }}" height="80%">
-			<ul>
-				<li>{{p_age}}</li>
-				<li>{{p_gender}}</li>
-				<li>{{p_mood}}</li>
-				<li>Costumer value: {{p_cv}}%</li>
-			</ul>
-			<h4>Company: {{p_company}}</h4>
-			<form method="post" action="{{ url_for('customer_value') }}">
-				<select name="company" id="company">
-				  <option value="Electronics">Electronics</option>
-				  <option value="Drugstore">Drugstore</option>
-				  <option value="Vegan Food">Vegan Food</option>
-				  <option value="Kiosk">Kiosk</option>
-				</select>
-				<input type="submit" value="Apply" name="apply" />
-			</form>
-
-			<h3 style="font-family:courier;">Instructions:</h3>
-			<ol style="font-family:courier;">
-			<li>Stop/Start</li>
-			<li>Capture</li>
-			<li>Face Only</li>
-			<li>Change Company</li>
+<header>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">ISP</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('index') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('instructions') }}">Instructions</a>
+                    </li>
+                </ul>
+            </div>
         </div>
+    </nav>
+</header>
+<div class="container mt-5">
+    <h1>ISP</h1>
+
+    <div class="d-flex justify-content-around">
+        <div class="form-check form-switch">
+            <input class="form-check-input" id="startStopSwitch" checked>
+            <label class="form-check-label" for="startStopSwitch">Start/Stop</label>
+        </div>
+        {% if camera_started %}
+        <div class="form-check form-switch">
+            <input class="form-check-input" id="faceOnlySwitch">
+            <label class="form-check-label" for="faceOnlySwitch">Face Only</label>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if camera_started %}
+    <div class="d-flex justify-content-center mt-3">
+        <button class="btn btn-primary" id="captureBtn">Capture</button>
+    </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-center mt-3">
+        {% if camera_started %}
+        <img src="{{ url_for('video_feed') }}" height="80%" alt="Camera">
+        {% else %}
+        <div style="height: 500px; width: 100%; background-color: #ccc;"></div>
+        {% endif %}
     </div>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const startStopSwitch = $("#startStopSwitch");
+        const faceOnlySwitch = $("#faceOnlySwitch");
+        const captureBtn = $("#captureBtn");
+
+        startStopSwitch.on("change", function () {
+            $.ajax({
+                type: "POST",
+                url: "/requests",
+                contentType: "application/json",
+                data: JSON.stringify({action: "startStop"}),
+                error: function (error) {
+                    console.error(error);
+                }
+            });
+        });
+
+        faceOnlySwitch.on("change", function () {
+            $.ajax({
+                type: "POST",
+                url: "/requests",
+                contentType: "application/json",
+                data: JSON.stringify({action: "faceOnly"}),
+                error: function (error) {
+                    console.error(error);
+                }
+            });
+        });
+
+        captureBtn.on("click", function () {
+            $.ajax({
+                type: "POST",
+                url: "/requests",
+                contentType: "application/json",
+                data: JSON.stringify({action: "capture"}),
+                error: function (error) {
+                    console.error(error);
+                }
+            });
+        });
+    });
+</script>
 </body>
+</html>
