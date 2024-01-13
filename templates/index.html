@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
     <title>ISP</title>
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
@@ -70,18 +70,18 @@
         <div class="col-3 mx-auto">
             <select class="form-select col-6" aria-label="Company" name="company" id="company">
                 <option value="None">None</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Drugstore">Drugstore</option>
-                <option value="Vegan Food">Vegan Food</option>
-                <option value="Kiosk">Kiosk</option>
-            </select>
+                <option value="Electronics" {{ e_sel }}>Electronics</option>
+                <option value="Drugstore" {{ d_sel }}>Drugstore</option>
+                <option value="Vegan Food" {{ v_sel }}>Vegan Food</option>
+                <option value="Kiosk" {{ k_sel }}>Kiosk</option>
+                </select>
         </div>
     </div>
     {% endif %}
 
     {% if company != 'None' %}
     <div id="cv" class="d-flex justify-content-center mt-3">
-        Customer value : <span id="p_cv">100</span>%
+        Customer value : <span id="p_cv"></span>{{ p_cv }} %
     </div>
     {% endif %}
 </div>
@@ -157,6 +157,7 @@
                     companySelect.val(response.company);
                 },
                 error: function (error) {
+                    console.error("COMPANY SELECT ERROR IN JS"),
                     console.error(error);
                 }
             });

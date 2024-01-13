@@ -191,13 +191,17 @@ def predictions():
 @app.route('/company', methods=['POST'])
 def customer_value():
     global current_company
-    current_company = request.form.get('company')
+    current_company = request.get_json()["company"]
     print(f"Company changed to {current_company}")
 
-    if current_company != "None":
-        prediction_cv = f'{(CostumerValueModel.calculateValue(current_company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
 
-        print(f"CV: {prediction_cv}")
+    lastPic = os.listdir("shots")
+    evaluate_shot(lastPic[len(lastPic) - 1])
+
+    # if current_company != "None":
+    #     prediction_cv = f'{(CostumerValueModel.calculateValue(current_company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
+    #
+    #     print(f"CV: {prediction_cv}")
 
     return render_flask_template()
 
@@ -241,4 +245,9 @@ def render_flask_template():
                            p_gender=prediction_gender,
                            p_mood=prediction_mood,
                            p_cv=prediction_cv,
-                           camera_started=camera_started)
+                           camera_started=camera_started,
+                           e_sel="selected" if current_company == "Electronics" else "",
+                           d_sel="selected" if current_company == "Drugstore" else "",
+                           v_sel="selected" if current_company == "Vegan Food" else "",
+                           k_sel="selected" if current_company == "Kiosk" else "")
+
