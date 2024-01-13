@@ -9,6 +9,9 @@ import DataLoader
 import constances
 import main
 
+global result
+result = 0
+
 global prediction_age, prediction_gender, prediction_mood, prediction_cv, current_company
 prediction_age = ""
 prediction_gender = ""
@@ -199,8 +202,9 @@ def tasks():
     action = data.get('action')
 
     if action == 'capture':
-        global capture
+        global capture, result
         capture = 1
+        result = 1
 
         while capture:
             time.sleep(10)
@@ -225,6 +229,7 @@ def tasks():
 
 def render_flask_template():
     return render_template('index.html',
+                           result=result,
                            p_age=prediction_age,
                            p_gender=prediction_gender,
                            p_mood=prediction_mood,

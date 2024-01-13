@@ -63,6 +63,17 @@
         <div style="height: 500px; width: 100%; background-color: #ccc;"></div>
         {% endif %}
     </div>
+
+    {% if result %}
+    <div class="d-flex justify-content-center mt-3">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">{{ p_age }}</li>
+            <li class="list-group-item">{{ p_gender }}</li>
+            <li class="list-group-item">{{ p_mood }}</li>
+            <li class="list-group-item">{{ p_cv }}%</li>
+        </ul>
+    </div>
+    {% endif %}
 </div>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
