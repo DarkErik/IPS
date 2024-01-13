@@ -24,4 +24,6 @@ def getModel():
                   metrics=['accuracy'],
                   )
 
+    # model.summary()
+
     return model

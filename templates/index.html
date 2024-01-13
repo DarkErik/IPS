@@ -110,7 +110,10 @@
                 type: "POST",
                 url: "/requests",
                 contentType: "application/json",
-                data: JSON.stringify({action: "capture"}),
+                data: JSON.stringify({ action: "capture" }),
+                success: function (response) {
+            		location.reload(true);
+                },
                 error: function (error) {
                     console.error(error);
                 }
