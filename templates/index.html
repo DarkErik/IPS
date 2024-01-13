@@ -81,6 +81,9 @@
                 url: "/requests",
                 contentType: "application/json",
                 data: JSON.stringify({action: "startStop"}),
+                success: function (response) {
+            		location.reload(true);
+                },
                 error: function (error) {
                     console.error(error);
                 }
@@ -93,6 +96,9 @@
                 url: "/requests",
                 contentType: "application/json",
                 data: JSON.stringify({action: "faceOnly"}),
+                success: function (response) {
+            		location.reload(true);
+                },
                 error: function (error) {
                     console.error(error);
                 }
