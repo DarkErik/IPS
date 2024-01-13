@@ -17,7 +17,7 @@ prediction_age = ""
 prediction_gender = ""
 prediction_mood = ""
 prediction_cv = ""
-current_company = "Electronics"
+current_company = "None"
 
 global model_age, model_gender, model_mood
 model_age = None
@@ -160,9 +160,10 @@ def evaluate_shot(shot_filename):
 
     print(f"MOOD PRED:{prediction_mood}")
 
-    prediction_cv = f'{(CostumerValueModel.calculateValue(current_company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
+    if current_company != "None":
+        prediction_cv = f'{(CostumerValueModel.calculateValue(current_company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
 
-    print(f"CV: {prediction_cv}")
+        print(f"CV: {prediction_cv}")
 
     print("--- END ---")
 
@@ -192,6 +193,11 @@ def customer_value():
     global current_company
     current_company = request.form.get('company')
     print(f"Company changed to {current_company}")
+
+    if current_company != "None":
+        prediction_cv = f'{(CostumerValueModel.calculateValue(current_company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
+
+        print(f"CV: {prediction_cv}")
 
     return render_flask_template()
 
@@ -230,9 +236,9 @@ def tasks():
 def render_flask_template():
     return render_template('index.html',
                            result=result,
+                           company=current_company,
                            p_age=prediction_age,
                            p_gender=prediction_gender,
                            p_mood=prediction_mood,
                            p_cv=prediction_cv,
-                           p_company=current_company,
                            camera_started=camera_started)

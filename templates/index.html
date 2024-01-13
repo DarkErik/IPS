@@ -59,21 +59,44 @@
     </div>
 
     {% if result %}
-    <div class="d-flex justify-content-center mt-3">
-        <ul class="list-group list-group-flush">
-            <li class="list-group-item">{{ p_age }}</li>
-            <li class="list-group-item">{{ p_gender }}</li>
-            <li class="list-group-item">{{ p_mood }}</li>
-            <li class="list-group-item">{{ p_cv }}%</li>
-        </ul>
+    <div class="d-flex align-items-center mt-3">
+        <div class="col-6">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">{{ p_age }}</li>
+                <li class="list-group-item">{{ p_gender }}</li>
+                <li class="list-group-item">{{ p_mood }}</li>
+            </ul>
+        </div>
+        <div class="col-3 mx-auto">
+            <select class="form-select col-6" aria-label="Company" name="company" id="company">
+                <option value="None">None</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Drugstore">Drugstore</option>
+                <option value="Vegan Food">Vegan Food</option>
+                <option value="Kiosk">Kiosk</option>
+            </select>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if company != 'None' %}
+    <div id="cv" class="d-flex justify-content-center mt-3">
+        Customer value : <span id="p_cv">100</span>%
     </div>
     {% endif %}
 </div>
 <script>
+    function getColor(value) {
+        const hue = (value * 120).toString(10);
+
+        return ["hsl(", hue, ",100%,50%)"].join("");
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         const startStopSwitch = $("#startStopSwitch");
         const faceOnlySwitch = $("#faceOnlySwitch");
         const captureBtn = $("#captureBtn");
+        const companySelect = $("#company");
 
         startStopSwitch.on("change", function () {
             $.ajax({
@@ -82,7 +105,7 @@
                 contentType: "application/json",
                 data: JSON.stringify({action: "startStop"}),
                 success: function (response) {
-            		location.reload(true);
+                    location.reload(true);
                 },
                 error: function (error) {
                     console.error(error);
@@ -97,7 +120,7 @@
                 contentType: "application/json",
                 data: JSON.stringify({action: "faceOnly"}),
                 success: function (response) {
-            		location.reload(true);
+                    location.reload(true);
                 },
                 error: function (error) {
                     console.error(error);
@@ -110,9 +133,28 @@
                 type: "POST",
                 url: "/requests",
                 contentType: "application/json",
-                data: JSON.stringify({ action: "capture" }),
+                data: JSON.stringify({action: "capture"}),
                 success: function (response) {
-            		location.reload(true);
+                    location.reload(true);
+                },
+                error: function (error) {
+                    console.error(error);
+                }
+            });
+        });
+
+        companySelect.on("change", function () {
+            $.ajax({
+                type: "POST",
+                url: "/company",
+                contentType: "application/json",
+                data: JSON.stringify({company: this.value}),
+                success: function (response) {
+                    location.reload(true);
+                    const p_cv = $("#p_cv").text() / 100;
+                    const color = getColor(p_cv);
+                    $("#cv").css("color", color);
+                    companySelect.val(response.company);
                 },
                 error: function (error) {
                     console.error(error);
