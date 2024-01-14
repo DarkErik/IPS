@@ -57,28 +57,27 @@
                 <li class="list-group-item">{{ prediction.mood }}</li>
             </ul>
         </div>
+        <div class="col-3 mx-auto">
+            <select class="form-select col-6" aria-label="Company" name="company" id="company">
+                <option value="None">None</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Drugstore">Drugstore</option>
+                <option value="Vegan Food">Vegan Food</option>
+                <option value="Kiosk">Kiosk</option>
+            </select>
+        </div>
     </div>
     {% endif %}
 
-    {% if company != 'None' %}
     <div id="cv" class="d-flex justify-content-center mt-3">
-        Customer value : <span id="p_cv"></span>{{ p_cv }} %
+
     </div>
-    {% endif %}
 </div>
 <script>
     function getColor(value) {
         const hue = (value * 120).toString(10);
 
         return ["hsl(", hue, ",100%,50%)"].join("");
-    }
-
-    function displayUploadedPhoto(filename) {
-        var uploadedImage = document.getElementById('uploadedImage');
-        var previewImage = document.getElementById('previewImage');
-
-        previewImage.src = '/uploads/' + filename;
-        uploadedImage.style.display = 'block';
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -91,11 +90,16 @@
                 contentType: "application/json",
                 data: JSON.stringify({company: this.value}),
                 success: function (response) {
-                    location.reload(true);
-                    const p_cv = $("#p_cv").text() / 100;
-                    const color = getColor(p_cv);
-                    $("#cv").css("color", color);
-                    companySelect.val(response.company);
+                    const cvDiv = $("#cv");
+                    cvDiv.empty();
+
+                    if (response === "0.0") {
+                        return;
+                    }
+
+                    const color = getColor(response / 100);
+
+                    cvDiv.append(`<div class="progress" style="width: 50%; height: 25px;"><div class="progress-bar" role="progressbar" style="width: ${response}%; background-color: ${color};" aria-valuenow="${response}" aria-valuemin="0" aria-valuemax="100">${response}%</div></div>`);
                 },
                 error: function (error) {
                     console.error(error);

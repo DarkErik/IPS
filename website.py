@@ -43,8 +43,6 @@ model_age = None
 model_gender = None
 model_mood = None
 
-current_company = "None"
-
 
 def start_camera():
     global camera_started
@@ -115,7 +113,6 @@ def gen_frames():  # generate frame by frame from camera
 
 def evaluate_shot(shot_filename):
     global model_age, model_gender, model_mood
-    global current_company
     if model_age is None:
         model_age = DataLoader.load_current_model(main.AGE_EXTENSION)
 
@@ -168,21 +165,14 @@ def evaluate_shot(shot_filename):
 
     print(f"MOOD PRED:{prediction_mood}")
 
-    prediction_cv = "None"
-
-    if current_company != "None":
-        prediction_cv = f'{(CostumerValueModel.calculateValue(current_company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
-
-        print(f"CV: {prediction_cv}")
-
     print("--- END ---")
 
     return {
         "age": prediction_age,
         "gender": prediction_gender,
-        "mood": prediction_mood,
-        "cv": prediction_cv
+        "mood": prediction_mood
     }
+
 
 def take_shot():
     global frame
@@ -195,20 +185,6 @@ def take_shot():
     cv2.imwrite(p, resized_image)
 
     return p
-
-
-def render_flask_template():
-    return render_template('camera.html',
-                           result=result,
-                           company=current_company,
-                           p_age=prediction_age,
-                           p_gender=prediction_gender,
-                           p_mood=prediction_mood,
-                           p_cv=prediction_cv,
-                           e_sel="selected" if current_company == "Electronics" else "",
-                           d_sel="selected" if current_company == "Drugstore" else "",
-                           v_sel="selected" if current_company == "Vegan Food" else "",
-                           k_sel="selected" if current_company == "Kiosk" else "")
 
 
 @app.route('/analysis')
@@ -236,19 +212,66 @@ def video_feed():
 
 @app.route('/company', methods=['POST'])
 def customer_value():
-    global current_company
-    current_company = request.get_json()["company"]
-    print(f"Company changed to {current_company}")
+    company = request.get_json()["company"]
 
-    # lastPic = os.listdir("shots")
-    # evaluate_shot(lastPic[len(lastPic) - 1])
+    # Get last uploaded image
+    files = os.listdir("uploads")
+    shot_filename = files[len(files) - 1]
 
-    # if current_company != "None":
-    #     prediction_cv = f'{(CostumerValueModel.calculateValue(current_company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
-    #
-    #     print(f"CV: {prediction_cv}")
+    global model_age, model_gender, model_mood
+    if model_age is None:
+        model_age = DataLoader.load_current_model(main.AGE_EXTENSION)
 
-    return render_flask_template()
+    if model_gender is None:
+        model_gender = DataLoader.load_current_model(main.GENDER_EXTENSION)
+
+    if model_mood is None:
+        model_mood = DataLoader.load_current_model(main.MOOD_EXTENSION)
+
+    # Same with mood!
+
+    pxls = np.array([0.0] * (DataLoader.WIDTH * DataLoader.HEIGHT * 3))
+    pxls = pxls.reshape((-1, DataLoader.WIDTH, DataLoader.HEIGHT, 3))
+
+    pxls[0] = DataLoader._preprocess_image("uploads", shot_filename, False)
+
+    pxls = pxls.reshape((-1, DataLoader.WIDTH, DataLoader.HEIGHT, 3))
+
+    predictions = model_age.predict(x=pxls, batch_size=1)
+    predictions = np.argmax(predictions, axis=1)
+
+    print(f"----- Pred: {shot_filename} -----")
+
+    if predictions[0] > 0:
+        print(
+            f"AGE: Between {constances.AGE_CATEGORIES[predictions[0] - 1]} and {constances.AGE_CATEGORIES[predictions[0]]}years old.")
+        prediction_age = f"Between {constances.AGE_CATEGORIES[predictions[0] - 1]} and {constances.AGE_CATEGORIES[predictions[0]]}years old."
+    else:
+        print(f"AGE: Less than {constances.AGE_CATEGORIES[predictions[0]]} years old")
+        prediction_age = f"Less than {constances.AGE_CATEGORIES[predictions[0]]} years old"
+
+    predictions_age_for_cv = predictions[0]
+
+    predictions = model_gender.predict(x=pxls, batch_size=1)
+
+    if int(predictions[0][0] + 0.5) >= 1:
+        gender = "female"
+    else:
+        gender = "male"
+    prediction_gender = f"Gender is {gender} ({predictions[0][0]:.2f})"
+    print(prediction_gender)
+
+    pxls = DataLoader.load_data_for_mood("uploads", shot_filename)
+
+    predictions = model_mood.predict(x=pxls, batch_size=1)
+
+    if company != "None":
+        prediction_cv = f'{(CostumerValueModel.calculateValue(company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
+        print(f"CV: {prediction_cv}")
+    else:
+        prediction_cv = "0.0"
+
+    return Response(prediction_cv, mimetype='text/plain')
 
 
 @app.route('/requests', methods=['POST'])
@@ -285,4 +308,3 @@ def upload():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory('uploads', filename)
-
