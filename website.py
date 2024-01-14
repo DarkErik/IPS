@@ -1,39 +1,19 @@
-from flask import Flask, Response, request, render_template
+from flask import Flask, Response, render_template, request, redirect, url_for, send_from_directory
+from werkzeug.utils import secure_filename
+
 import cv2
-import datetime, time
-import os, sys
 import numpy as np
+import os, sys
+import datetime
 
 import CostumerValueModel
 import DataLoader
-import constances
 import main
 
-global result
-result = 0
-
-global prediction_age, prediction_gender, prediction_mood, prediction_cv, current_company
-prediction_age = ""
-prediction_gender = ""
-prediction_mood = ""
-prediction_cv = ""
-current_company = "None"
-
-global model_age, model_gender, model_mood
-model_age = None
-model_gender = None
-model_mood = None
-
-global capture, face, rec, out
-capture = 0
-face = 0
-
-global camera_started
-camera_started = 1
-
-# make shots directory to save pics
+# make shots and uploads directory to save pics
 try:
     os.mkdir('./shots')
+    os.mkdir('./uploads')
 except OSError as error:
     pass
 
@@ -44,15 +24,49 @@ net = cv2.dnn.readNetFromCaffe('./saved_model/deploy.prototxt.txt',
 # instatiate flask app
 app = Flask(__name__, template_folder='./templates')
 
-camera = cv2.VideoCapture(0)
+prediction = {}
+model = {}
+
+video = None
+camera_started = False
+
+frame = None
+
+face_only = False
+
+model_age = None
+model_gender = None
+model_mood = None
+
+
+def start_camera():
+    global camera_started
+    if camera_started:
+        return
+
+    global video
+    video = cv2.VideoCapture(0)
+    camera_started = True
+
+
+def stop_camera():
+    global camera_started
+    if not camera_started:
+        return
+
+    global video
+    video.release()
+    cv2.destroyAllWindows()
+    camera_started = False
 
 
 def run():
     app.run()
 
 
-def detect_face(frame):
+def detect_face():
     global net
+    global frame
     (h, w) = frame.shape[:2]
     blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 1.0,
                                  (300, 300), (104.0, 177.0, 123.0))
@@ -77,37 +91,23 @@ def detect_face(frame):
 
 
 def gen_frames():  # generate frame by frame from camera
-    global out, capture
-    while True:
-        success, frame = camera.read()
+    global video
+    global frame
+    global face_only
+
+    while camera_started:
+        success, frame = video.read()
         if success:
-            if face:
-                frame = detect_face(frame)
-            if capture:
-                now = datetime.datetime.now()
-                image_name = "shot_{}.png".format(str(now).replace(":", ''));
-                p = os.path.sep.join(['shots', image_name])
+            if face_only:
+                frame = detect_face()
 
-                resized_image = cv2.resize(frame, (DataLoader.WIDTH, DataLoader.HEIGHT))
-                cv2.imwrite(p, resized_image)
-
-                evaluate_shot(shot_filename=image_name)
-                capture = 0
-
-            try:
-                ret, buffer = cv2.imencode('.jpg', cv2.flip(frame, 1))
-                frame = buffer.tobytes()
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            except Exception as e:
-                pass
-
-        else:
-            pass
+            cv2.imwrite('t.jpg', frame)
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + open('t.jpg', 'rb').read() + b'\r\n')
 
 
 def evaluate_shot(shot_filename):
-    global model_age, model_gender, model_mood, prediction_age, prediction_mood, prediction_gender, prediction_cv
+    global model_age, model_gender, model_mood
     if model_age is None:
         model_age = DataLoader.load_current_model(main.AGE_EXTENSION)
 
@@ -122,7 +122,7 @@ def evaluate_shot(shot_filename):
     pxls = np.array([0.0] * (DataLoader.WIDTH * DataLoader.HEIGHT * 3))
     pxls = pxls.reshape((-1, DataLoader.WIDTH, DataLoader.HEIGHT, 3))
 
-    pxls[0] = DataLoader._preprocess_image("shots", shot_filename, False)
+    pxls[0] = DataLoader._preprocess_image("uploads", shot_filename, False)
 
     pxls = pxls.reshape((-1, DataLoader.WIDTH, DataLoader.HEIGHT, 3))
 
@@ -150,7 +150,7 @@ def evaluate_shot(shot_filename):
     prediction_gender = f"Gender is {gender} ({predictions[0][0]:.2f})"
     print(prediction_gender)
 
-    pxls = DataLoader.load_data_for_mood("shots", shot_filename)
+    pxls = DataLoader.load_data_for_mood("uploads", shot_filename)
 
     predictions = model_mood.predict(x=pxls, batch_size=1)
 
@@ -167,25 +167,61 @@ def evaluate_shot(shot_filename):
 
     print("--- END ---")
 
+    return {
+        "age": prediction_age,
+        "gender": prediction_gender,
+        "mood": prediction_mood,
+        "cv": prediction_cv
+    }
 
-@app.route('/instructions')
-def instructions():
-    return render_template('instructions.html')
+def take_shot():
+    global frame
+
+    now = datetime.datetime.now()
+    image_name = "shot_{}.png".format(str(now).replace(":", ''))
+    p = os.path.sep.join(['shots', image_name])
+
+    resized_image = cv2.resize(frame, (DataLoader.WIDTH, DataLoader.HEIGHT))
+    cv2.imwrite(p, resized_image)
+
+    return p
+
+
+def render_flask_template():
+    return render_template('camera.html',
+                           result=result,
+                           company=current_company,
+                           p_age=prediction_age,
+                           p_gender=prediction_gender,
+                           p_mood=prediction_mood,
+                           p_cv=prediction_cv,
+                           e_sel="selected" if current_company == "Electronics" else "",
+                           d_sel="selected" if current_company == "Drugstore" else "",
+                           v_sel="selected" if current_company == "Vegan Food" else "",
+                           k_sel="selected" if current_company == "Kiosk" else "")
+
+
+@app.route('/analysis')
+def analysis():
+    stop_camera()
+    return render_template('analysis.html', camera_started=camera_started)
+
+
+@app.route('/camera')
+def camera():
+    start_camera()
+    return render_template('camera.html', camera_started=camera_started)
 
 
 @app.route('/')
 def index():
-    return render_flask_template()
+    stop_camera()
+    return render_template('index.html')
 
 
 @app.route('/video_feed')
 def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-
-@app.route('/predictions')
-def predictions():
-    return Response("hi <3")
 
 
 @app.route('/company', methods=['POST'])
@@ -194,9 +230,8 @@ def customer_value():
     current_company = request.get_json()["company"]
     print(f"Company changed to {current_company}")
 
-
-    lastPic = os.listdir("shots")
-    evaluate_shot(lastPic[len(lastPic) - 1])
+    # lastPic = os.listdir("shots")
+    # evaluate_shot(lastPic[len(lastPic) - 1])
 
     # if current_company != "None":
     #     prediction_cv = f'{(CostumerValueModel.calculateValue(current_company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
@@ -208,46 +243,36 @@ def customer_value():
 
 @app.route('/requests', methods=['POST'])
 def tasks():
+    global face_only
+
     data = request.get_json()
     action = data.get('action')
 
     if action == 'capture':
-        global capture, result
-        capture = 1
-        result = 1
+        image_name = take_shot()
 
-        while capture:
-            time.sleep(10)
+        return Response(image_name, mimetype='text/plain')
     elif action == 'faceOnly':
-        global face
-        face = not face
+        face_only = True
+    elif action == 'full':
+        face_only = False
 
-        if face:
-            time.sleep(4)
-    elif action == 'startStop':
-        global camera, camera_started
-        camera_started = not camera_started
-
-        if camera_started:
-            camera.release()
-            cv2.destroyAllWindows()
-        else:
-            camera = cv2.VideoCapture(0)
-
-    return render_flask_template()
+    return render_template('camera.html', face_only=face_only)
 
 
-def render_flask_template():
-    return render_template('index.html',
-                           result=result,
-                           company=current_company,
-                           p_age=prediction_age,
-                           p_gender=prediction_gender,
-                           p_mood=prediction_mood,
-                           p_cv=prediction_cv,
-                           camera_started=camera_started,
-                           e_sel="selected" if current_company == "Electronics" else "",
-                           d_sel="selected" if current_company == "Drugstore" else "",
-                           v_sel="selected" if current_company == "Vegan Food" else "",
-                           k_sel="selected" if current_company == "Kiosk" else "")
+@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files['file']
+    filename = secure_filename(file.filename)
+    filepath = os.path.join('uploads', filename)
+    file.save(filepath)
+
+    prediction = evaluate_shot(file.filename)
+
+    return render_template('analysis.html', filename=filename, prediction=prediction)
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory('uploads', filename)
 

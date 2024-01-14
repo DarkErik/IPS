@@ -21,7 +21,10 @@
                         <a class="nav-link active" href="{{ url_for('index') }}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('instructions') }}">Instructions</a>
+                        <a class="nav-link" href="{{ url_for('camera') }}">Camera</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('analysis') }}">Analysis</a>
                     </li>
                 </ul>
             </div>
@@ -29,140 +32,14 @@
     </nav>
 </header>
 <div class="container mt-5">
-    <h1>ISP</h1>
+    <h1>Instructions</h1>
 
-    <div class="d-flex justify-content-around">
-        <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="startStopSwitch" checked>
-            <label class="form-check-label" for="startStopSwitch">Start/Stop</label>
-        </div>
-        {% if camera_started %}
-        <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="faceOnlySwitch">
-            <label class="form-check-label" for="faceOnlySwitch">Face Only</label>
-        </div>
-        {% endif %}
-    </div>
-
-    {% if camera_started %}
-    <div class="d-flex justify-content-center mt-3">
-        <button class="btn btn-primary" id="captureBtn">Capture</button>
-    </div>
-    {% endif %}
-
-    <div class="d-flex justify-content-center mt-3">
-        {% if camera_started %}
-        <img src="{{ url_for('video_feed') }}" height="80%" alt="Camera">
-        {% else %}
-        <div style="height: 500px; width: 100%; background-color: #ccc;"></div>
-        {% endif %}
-    </div>
-
-    {% if result %}
-    <div class="d-flex align-items-center mt-3">
-        <div class="col-6">
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item">{{ p_age }}</li>
-                <li class="list-group-item">{{ p_gender }}</li>
-                <li class="list-group-item">{{ p_mood }}</li>
-            </ul>
-        </div>
-        <div class="col-3 mx-auto">
-            <select class="form-select col-6" aria-label="Company" name="company" id="company">
-                <option value="None">None</option>
-                <option value="Electronics" {{ e_sel }}>Electronics</option>
-                <option value="Drugstore" {{ d_sel }}>Drugstore</option>
-                <option value="Vegan Food" {{ v_sel }}>Vegan Food</option>
-                <option value="Kiosk" {{ k_sel }}>Kiosk</option>
-                </select>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if company != 'None' %}
-    <div id="cv" class="d-flex justify-content-center mt-3">
-        Customer value : <span id="p_cv"></span>{{ p_cv }} %
-    </div>
-    {% endif %}
+    <ul style="font-family:courier;">
+        <li>Stop/Start : Stop/Start the video</li>
+        <li>Capture : Capture the current frame</li>
+        <li>Face Only</li>
+        <li>Change Company</li>
+    </ul>
 </div>
-<script>
-    function getColor(value) {
-        const hue = (value * 120).toString(10);
-
-        return ["hsl(", hue, ",100%,50%)"].join("");
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        const startStopSwitch = $("#startStopSwitch");
-        const faceOnlySwitch = $("#faceOnlySwitch");
-        const captureBtn = $("#captureBtn");
-        const companySelect = $("#company");
-
-        startStopSwitch.on("change", function () {
-            $.ajax({
-                type: "POST",
-                url: "/requests",
-                contentType: "application/json",
-                data: JSON.stringify({action: "startStop"}),
-                success: function (response) {
-                    location.reload(true);
-                },
-                error: function (error) {
-                    console.error(error);
-                }
-            });
-        });
-
-        faceOnlySwitch.on("change", function () {
-            $.ajax({
-                type: "POST",
-                url: "/requests",
-                contentType: "application/json",
-                data: JSON.stringify({action: "faceOnly"}),
-                success: function (response) {
-                    location.reload(true);
-                },
-                error: function (error) {
-                    console.error(error);
-                }
-            });
-        });
-
-        captureBtn.on("click", function () {
-            $.ajax({
-                type: "POST",
-                url: "/requests",
-                contentType: "application/json",
-                data: JSON.stringify({action: "capture"}),
-                success: function (response) {
-                    location.reload(true);
-                },
-                error: function (error) {
-                    console.error(error);
-                }
-            });
-        });
-
-        companySelect.on("change", function () {
-            $.ajax({
-                type: "POST",
-                url: "/company",
-                contentType: "application/json",
-                data: JSON.stringify({company: this.value}),
-                success: function (response) {
-                    location.reload(true);
-                    const p_cv = $("#p_cv").text() / 100;
-                    const color = getColor(p_cv);
-                    $("#cv").css("color", color);
-                    companySelect.val(response.company);
-                },
-                error: function (error) {
-                    console.error("COMPANY SELECT ERROR IN JS"),
-                    console.error(error);
-                }
-            });
-        });
-    });
-</script>
 </body>
 </html>
