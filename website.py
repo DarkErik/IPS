@@ -9,10 +9,15 @@ import datetime
 import CostumerValueModel
 import DataLoader
 import main
+import constances
 
 # make shots and uploads directory to save pics
 try:
     os.mkdir('./shots')
+except OSError as error:
+    pass
+
+try:
     os.mkdir('./uploads')
 except OSError as error:
     pass
@@ -37,6 +42,8 @@ face_only = False
 model_age = None
 model_gender = None
 model_mood = None
+
+current_company = "None"
 
 
 def start_camera():
@@ -108,6 +115,7 @@ def gen_frames():  # generate frame by frame from camera
 
 def evaluate_shot(shot_filename):
     global model_age, model_gender, model_mood
+    global current_company
     if model_age is None:
         model_age = DataLoader.load_current_model(main.AGE_EXTENSION)
 
@@ -160,6 +168,8 @@ def evaluate_shot(shot_filename):
 
     print(f"MOOD PRED:{prediction_mood}")
 
+    prediction_cv = "None"
+
     if current_company != "None":
         prediction_cv = f'{(CostumerValueModel.calculateValue(current_company, gender == "female", predictions_age_for_cv, predictions[0]) * 100):.2f}'
 
@@ -178,7 +188,7 @@ def take_shot():
     global frame
 
     now = datetime.datetime.now()
-    image_name = "shot_{}.png".format(str(now).replace(":", ''))
+    image_name = "shot_{}.png".format(now.strftime("%Y-%m-%d_%H%M%S"))
     p = os.path.sep.join(['shots', image_name])
 
     resized_image = cv2.resize(frame, (DataLoader.WIDTH, DataLoader.HEIGHT))
