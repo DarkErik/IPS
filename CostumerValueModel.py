@@ -50,7 +50,7 @@ class CVCalculator:
         points += self.mood_off_value * self.value_weighs[2]
         points += self.value_weighs[2] * (1 - self.mood_off_value) * mood_sum
 
-        return points
+        return min(max(0, points), 1)
 
 
 companies = {
